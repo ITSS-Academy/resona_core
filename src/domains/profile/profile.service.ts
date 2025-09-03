@@ -32,4 +32,20 @@ export class ProfileService {
     }
     return data;
   }
+
+  async followProfile(followerId: string, followingId: string) {
+    const {data, error} = await supabase.from('follows').insert({followerId, followingId}).select();
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  }
+
+  async getFollowers(profileId: string) {
+    const {data, error} = await supabase.from('follows').select('followerId').eq('followingId', profileId);
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  }
 }

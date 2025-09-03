@@ -36,4 +36,14 @@ export class ProfileController {
   remove(@Param('id') id: string) {
     return this.profileService.remove(+id);
   }
+
+  @Post('follow/:followerId/:followingId')
+  followProfile(@Param('followerId') followerId: string, @Param('followingId') followingId: string) {
+    return this.profileService.followProfile(followerId, followingId);
+  }
+
+  @Get('followers/:profileId')
+  getFollowers(@Param('profileId') profileId: string) {
+    return this.profileService.getFollowers(profileId);
+  }
 }

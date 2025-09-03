@@ -17,9 +17,9 @@ export class CategoryController {
     return this.categoryService.getAll();
   }
 
-  @Get(':categoryId/search')
-  search(@Param('categoryId') categoryId: string, @Query('search') query: string) {
-    return this.categoryService.search(categoryId, query);
+  @Get('search')
+  search( @Query('search') query: string) {
+    return this.categoryService.search( query);
   }
 
 

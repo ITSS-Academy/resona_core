@@ -121,11 +121,25 @@ export class TrackService {
       });
   }
 
-  getTracksByOwnerId(ownerId: string) {
+  async getTracksByOwnerId(ownerId: string) {
     return supabase
       .from('track')
       .select('*')
       .eq('ownerId', ownerId)
+      .then(({ data, error }) => {
+        if (error) {
+          throw new BadRequestException(error);
+        }
+        return data;
+      });
+  }
+
+  async getTrackDetails(trackId: string) {
+    return supabase
+      .from('track')
+      .select('*')
+      .eq('id', trackId)
+      .single()
       .then(({ data, error }) => {
         if (error) {
           throw new BadRequestException(error);

@@ -5,9 +5,6 @@ export class CreatePlaylistDto {
   title: string;
 
   @IsString()
-  thumbnailPath?: string;
-
-  @IsString()
   description?: string;
 }
 

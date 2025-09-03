@@ -67,12 +67,11 @@ export class CategoryService {
     return `This action removes a #${id} category`;
   }
 
-  async search(categoryId: string, query: string) {
+  async search( query: string) {
     const { data, error } = await supabase
-      .from('track')
+      .from('category')
       .select('*')
-      .eq('categoryId', categoryId)
-      .ilike('title', `%${query}%`);
+      .ilike('name', `%${query}%`);
     if (error) {
       throw new BadRequestException(error);
     }

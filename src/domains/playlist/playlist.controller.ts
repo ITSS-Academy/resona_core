@@ -8,26 +8,33 @@ import {
   Put,
   Query,
   UseInterceptors,
-  UploadedFile,
+  UploadedFile, BadRequestException,
 } from '@nestjs/common';
 import { PlaylistService } from './playlist.service';
 import { PlaylistTrackDto, CreatePlaylistDto } from './dto/create-playlist.dto';
 import { UpdateThumbnailDto, UpdateTitleDto } from './dto/update-playlist.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { uuid } from '@supabase/supabase-js/dist/main/lib/helpers';
+import { supabase } from '../../utils/supbabase';
 
 @Controller('playlist')
 export class PlaylistController {
   constructor(private readonly playlistService: PlaylistService) {}
 
   @Post('create/:userId')
-  create(
+  @UseInterceptors(FileInterceptor('file'))
+  async create(
     @Param('userId') userId: string,
-    @Body() createPlaylistDto: CreatePlaylistDto) {
+    @Body() createPlaylistDto: CreatePlaylistDto,
+    @UploadedFile() thumbnail: Express.Multer.File,
+  ) {
     return this.playlistService.createPlaylist(
       createPlaylistDto,
       userId,
+      thumbnail,
     );
   }
+
 
   @Post('add-track')
   addTrack(@Body() trackDto: PlaylistTrackDto) {

@@ -5,34 +5,88 @@ import { supabase } from '../../utils/supbabase';
 import { Playlist } from './entities/playlist.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Comment } from '../comment/entities/comment.entity';
 
 @Injectable()
 export class PlaylistService {
   constructor(
     @InjectRepository(Playlist)
     private playlistRepository: Repository<Playlist>,
-  ) {
-  }
+  ) {}
 
-  async createPlaylist(createPlaylistDto: CreatePlaylistDto, userId: string) {
-    const { data, error } = await supabase
+  async createPlaylist(
+    createPlaylistDto: CreatePlaylistDto,
+    userId: string,
+    thumbnail?: Express.Multer.File,
+  ) {
+    let thumbnailPath: string | null =
+      'https://cajbdmrbdoctltruejun.supabase.co/storage/v1/object/public/thumbnail/492a1aa6-ab7f-4cc6-befc-c8a809db7f3b/thumbnail.jpg';
+
+    // 1. Tạo playlist (thumbnail mặc định)
+    const { data: createdData, error: createError } = await supabase
       .from('playlist')
       .insert({
         title: createPlaylistDto.title,
-        description: createPlaylistDto.description,
-        thumbnailPath:
-          'https://cajbdmrbdoctltruejun.supabase.co/storage/v1/object/public/thumbnail/492a1aa6-ab7f-4cc6-befc-c8a809db7f3b/thumbnail.jpg',
+        thumbnailPath: thumbnailPath,
         profileId: userId,
+        description: createPlaylistDto.description,
       })
-      .select();
+      .select()
+      .single();
 
-    if (error) {
-      console.log(error);
+    if (createError) {
+      console.error('Insert error:', createError);
       throw new BadRequestException('Failed to create playlist');
     }
 
-    return data[0];
+    const playlistId = createdData.id;
+
+    // 2. Nếu có file thì upload vào bucket
+    if (thumbnail) {
+      const fileName = 'playlist-thumbnail.jpg';
+      const filePath = `${playlistId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('playlist-thumbnail')
+        .upload(filePath, thumbnail.buffer, {
+          contentType: thumbnail.mimetype,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        throw new BadRequestException(uploadError.message);
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('playlist-thumbnail')
+        .getPublicUrl(filePath);
+
+      thumbnailPath = publicUrlData.publicUrl;
+
+      // Cập nhật playlist với thumbnail mới
+      const { error: updateError } = await supabase
+        .from('playlist')
+        .update({ thumbnailPath })
+        .eq('id', playlistId);
+
+      if (updateError) {
+        throw new BadRequestException(
+          'Failed to update playlist with thumbnail',
+        );
+      }
+    }
+
+    // 3. Lấy playlist cuối cùng
+    const { data: finalData, error: finalError } = await supabase
+      .from('playlist')
+      .select()
+      .eq('id', playlistId)
+      .single();
+
+    if (finalError) {
+      throw new BadRequestException('Failed to fetch playlist');
+    }
+
+    return finalData;
   }
 
   async addTrackToPlaylist(playlistId: string, trackId: string) {
@@ -214,7 +268,8 @@ export class PlaylistService {
         .select()
         .single();
 
-      if (error) throw new BadRequestException('Cannot create favorite playlist');
+      if (error)
+        throw new BadRequestException('Cannot create favorite playlist');
 
       playlistId = newPlaylist.id;
     }
@@ -251,7 +306,8 @@ export class PlaylistService {
   }
 
   async getRandomPlaylists(limit: number): Promise<Playlist[]> {
-    const qb = this.playlistRepository.createQueryBuilder('playlist')
+    const qb = this.playlistRepository
+      .createQueryBuilder('playlist')
       .leftJoinAndSelect('playlist.tracks', 'track')
       .orderBy('RANDOM()') // PostgreSQL random
       .take(limit);
