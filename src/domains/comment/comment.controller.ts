@@ -21,5 +21,9 @@ export class CommentController {
     return this.commentService.getComments(trackId);
   }
 
+  @Get('count/:trackId')
+  async countCommentsByTrack(@Param('trackId') trackId: string): Promise<number> {
+    return this.commentService.countCommentsBasedOnTrackId(trackId);
+  }
 
 }
