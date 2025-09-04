@@ -147,4 +147,18 @@ export class TrackService {
         return data;
       });
   }
+
+  async getFavouriteTracks(userId: string) {
+    return supabase
+      .from('playlist')
+      .select('track(*)')
+      .eq('title', 'Favorite')
+      .eq('profileId', userId)
+      .then(({ data, error }) => {
+        if (error) {
+          throw new BadRequestException(error);
+        }
+        return data.map(item => item.track);
+      });
+  }
 }

@@ -255,6 +255,11 @@ export class TrackController {
     return { ...savedTrack, lyricsPath };
   }
 
+  @Get('favorite/:userId')
+  getFavoriteTracks(@Param('userId') userId: string) {
+    return this.trackService.getFavouriteTracks(userId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.trackService.getTrackById(+id);
