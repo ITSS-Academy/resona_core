@@ -260,9 +260,9 @@ export class TrackController {
     return this.trackService.getFavouriteTracks(userId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.trackService.getTrackById(+id);
+  @Patch(':trackId/increase-view')
+  async increaseView(@Param('trackId') trackId: string) {
+    return this.trackService.incrementViewCount(trackId);
   }
 
   @Get('uploaded/:ownerId')
@@ -273,6 +273,11 @@ export class TrackController {
   @Get('by-category/:categoryId')
   findByCategory(@Param('categoryId') categoryId: string) {
     return this.trackService.getTracksByCategoryId(categoryId);
+  }
+
+  @Get(':trackId')
+  getTrackDetails(@Param('trackId') trackId: string) {
+    return this.trackService.getTrackDetails(trackId);
   }
 
   @Get('search')

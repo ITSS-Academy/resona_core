@@ -161,4 +161,17 @@ export class TrackService {
         return data.map(item => item.track);
       });
   }
+
+  async incrementViewCount(trackId: string) {
+    const { data, error } = await supabase
+      .rpc('increment_view_count', { track_id: trackId });
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    // Vì returns void nên data = null
+    return { success: true };
+  }
+
 }
