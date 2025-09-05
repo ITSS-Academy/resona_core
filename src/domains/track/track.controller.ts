@@ -66,17 +66,15 @@ export class TrackController {
 
     fs.cpSync(files[0].path, `${nameDir}/${createTrackDto.trackName}`);
 
-    fs.rmSync(files[0].path)
+    fs.rmSync(files[0].path);
 
     console.log('Uploaded files:', files);
 
-
     return {
-        message: 'Track uploaded successfully',
-        trackId: createTrackDto.trackId,
-        trackName: createTrackDto.trackName,
-    }
-
+      message: 'Track uploaded successfully',
+      trackId: createTrackDto.trackId,
+      trackName: createTrackDto.trackName,
+    };
   }
 
   @Post('merge')
@@ -255,9 +253,14 @@ export class TrackController {
     return { ...savedTrack, lyricsPath };
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.trackService.getTrackById(+id);
+  @Get('favorite/:userId')
+  getFavoriteTracks(@Param('userId') userId: string) {
+    return this.trackService.getFavouriteTracks(userId);
+  }
+
+  @Patch(':trackId/increase-view')
+  async increaseView(@Param('trackId') trackId: string) {
+    return this.trackService.incrementViewCount(trackId);
   }
 
   @Get('uploaded/:ownerId')
@@ -268,6 +271,11 @@ export class TrackController {
   @Get('by-category/:categoryId')
   findByCategory(@Param('categoryId') categoryId: string) {
     return this.trackService.getTracksByCategoryId(categoryId);
+  }
+
+  @Get(':trackId')
+  getTrackDetails(@Param('trackId') trackId: string) {
+    return this.trackService.getTrackDetails(trackId);
   }
 
   @Get('search')
@@ -283,5 +291,23 @@ export class TrackController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.trackService.remove(+id);
+  }
+
+  @Get('thumbnail-url/:trackId')
+  async getThumbnailBasedOnTrackId(@Param('trackId') trackId: string) {
+    const url = await this.trackService.getThumbnailBasedOnTrackId(trackId);
+    if (!url) {
+      throw new NotFoundException('Thumbnail not found');
+    }
+    return { url };
+  }
+
+  @Get('lyrics/:trackId')
+  async getLyricsByTrackId(@Param('trackId') trackId: string) {
+    const lyrics = await this.trackService.getLyricsByTrackId(trackId);
+    if (!lyrics) {
+      throw new NotFoundException('Lyrics not found');
+    }
+    return { lyrics };
   }
 }

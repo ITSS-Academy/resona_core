@@ -147,4 +147,85 @@ export class TrackService {
         return data;
       });
   }
+
+  async getFavouriteTracks(userId: string) {
+    return supabase
+      .from('playlist')
+      .select('track(*)')
+      .eq('title', 'Favorite')
+      .eq('profileId', userId)
+      .then(({ data, error }) => {
+        if (error) {
+          throw new BadRequestException(error);
+        }
+        return data.map(item => item.track);
+      });
+  }
+
+  async incrementViewCount(trackId: string) {
+    const { data, error } = await supabase
+      .rpc('increment_view_count', { track_id: trackId });
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    // Vì returns void nên data = null
+    return { success: true };
+  }
+
+  async getThumbnailBasedOnTrackId(trackId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .storage
+      .from('thumbnail')
+      .list(trackId);
+
+    if (error || !data || data.length === 0) {
+      return null;
+    }
+
+    const jpgFile = data.find(file => file.name.endsWith('.jpg'));
+    if (!jpgFile) {
+      return null;
+    }
+
+    const { data: publicUrlData } = supabase
+      .storage
+      .from('thumbnail')
+      .getPublicUrl(`${trackId}/${jpgFile.name}`);
+
+    return publicUrlData?.publicUrl ?? null;
+  }
+
+  async getLyricsByTrackId(trackId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .storage
+      .from('lyrics')
+      .list(trackId);
+
+    if (error || !data || data.length === 0) {
+      return null;
+    }
+
+    const txtFile = data.find(file => file.name.endsWith('.txt'));
+    if (!txtFile) {
+      return null;
+    }
+
+    const { data: fileData, error: downloadError } = await supabase
+      .storage
+      .from('lyrics')
+      .download(`${trackId}/${txtFile.name}`);
+
+    if (downloadError || !fileData) {
+      return null;
+    }
+
+    const buffer = await fileData.arrayBuffer();
+    return Buffer.from(buffer).toString('utf-8');
+  }
+
+
+
+
 }

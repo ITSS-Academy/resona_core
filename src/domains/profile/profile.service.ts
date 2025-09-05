@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { supabase } from '../../utils/supbabase';
@@ -13,9 +13,9 @@ export class ProfileService {
     return `This action returns all profile`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} profile`;
-  }
+  // findOne(id: number) {
+  //   return `This action returns a #${id} profile`;
+  // }
 
   update(id: number, updateProfileDto: UpdateProfileDto) {
     return `This action updates a #${id} profile`;
@@ -43,6 +43,18 @@ export class ProfileService {
 
   async getFollowers(profileId: string) {
     const {data, error} = await supabase.from('follows').select('followerId').eq('followingId', profileId);
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  }
+
+  async getProfileById(profileId: string) {
+    const { data, error } = await supabase
+      .from('profile')
+      .select('*')
+      .eq('id', profileId)
+      .single();
     if (error) {
       throw new Error(error.message);
     }

@@ -62,7 +62,7 @@ export async function convertAudioToAac(
   }
 
   // Kiểm tra ffmpeg có sẵn
-  // await assertFfmpeg();
+  await assertFfmpeg();
 
   // Chuẩn hóa path cho cross-platform
   const slash = (await import('slash')).default;
@@ -86,24 +86,15 @@ export async function convertAudioToAac(
     safeOut,
   ];
 
-  // Chạy ffmpeg bằng spawn
-  await new Promise<void>((resolve, reject) => {
-    const ffmpeg = spawn('ffmpeg', args);
-    let stderr = '';
-    ffmpeg.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-    ffmpeg.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`FFmpeg failed: ${stderr || `exit code ${code}`}`));
-      }
-    });
-    ffmpeg.on('error', (err) => {
-      reject(err);
-    });
-  });
+  // Chạy ffmpeg bằng zx
+  const { $ } = await import('zx');
+  $.verbose = false;
+  try {
+    await $`ffmpeg ${args}`;
+  } catch (err: any) {
+    // Khi -n (no overwrite) trùng file, ffmpeg trả mã lỗi — báo rõ cho dev
+    throw new Error(`FFmpeg failed: ${err?.stderr || err?.message || err}`);
+  }
 
   if (!fs.existsSync(outFile)) {
     throw new Error('AAC output not found after ffmpeg finished.');
@@ -191,7 +182,9 @@ Options:
 // }
 
 export async function getAudioDuration(inputPath: string): Promise<number> {
+  const { $ } = await import('zx');
   const slash = (await import('slash')).default;
+
   const safeIn = slash(inputPath);
   return new Promise((resolve, reject) => {
     const ffprobe = spawn('ffprobe', [
