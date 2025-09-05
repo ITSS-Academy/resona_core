@@ -10,12 +10,17 @@ export class CategoryService {
   }
 
   async getAll() {
-    const { data, error } = await supabase.from('category').select();
+    const { data, error } = await supabase
+      .from('category')
+      .select()
+      .order('name', { ascending: true }); // sắp xếp theo bảng chữ cái
+
     if (error) {
       throw new BadRequestException(error);
     }
     return data;
   }
+
 
   findAll() {
     return `This action returns all category`;
