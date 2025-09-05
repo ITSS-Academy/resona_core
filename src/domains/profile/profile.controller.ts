@@ -17,10 +17,10 @@ export class ProfileController {
     return this.profileService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.profileService.findOne(+id);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.profileService.findOne(+id);
+  // }
 
   @Get('search')
   search(@Param('search') username: string) {
@@ -45,5 +45,10 @@ export class ProfileController {
   @Get('followers/:profileId')
   getFollowers(@Param('profileId') profileId: string) {
     return this.profileService.getFollowers(profileId);
+  }
+
+  @Get(':profileId')
+  async getProfile(@Param('profileId') profileId: string) {
+    return this.profileService.getProfileById(profileId);
   }
 }
