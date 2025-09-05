@@ -174,4 +174,58 @@ export class TrackService {
     return { success: true };
   }
 
+  async getThumbnailBasedOnTrackId(trackId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .storage
+      .from('thumbnail')
+      .list(trackId);
+
+    if (error || !data || data.length === 0) {
+      return null;
+    }
+
+    const jpgFile = data.find(file => file.name.endsWith('.jpg'));
+    if (!jpgFile) {
+      return null;
+    }
+
+    const { data: publicUrlData } = supabase
+      .storage
+      .from('thumbnail')
+      .getPublicUrl(`${trackId}/${jpgFile.name}`);
+
+    return publicUrlData?.publicUrl ?? null;
+  }
+
+  async getLyricsByTrackId(trackId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .storage
+      .from('lyrics')
+      .list(trackId);
+
+    if (error || !data || data.length === 0) {
+      return null;
+    }
+
+    const txtFile = data.find(file => file.name.endsWith('.txt'));
+    if (!txtFile) {
+      return null;
+    }
+
+    const { data: fileData, error: downloadError } = await supabase
+      .storage
+      .from('lyrics')
+      .download(`${trackId}/${txtFile.name}`);
+
+    if (downloadError || !fileData) {
+      return null;
+    }
+
+    const buffer = await fileData.arrayBuffer();
+    return Buffer.from(buffer).toString('utf-8');
+  }
+
+
+
+
 }

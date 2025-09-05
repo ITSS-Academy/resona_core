@@ -66,17 +66,15 @@ export class TrackController {
 
     fs.cpSync(files[0].path, `${nameDir}/${createTrackDto.trackName}`);
 
-    fs.rmSync(files[0].path)
+    fs.rmSync(files[0].path);
 
     console.log('Uploaded files:', files);
 
-
     return {
-        message: 'Track uploaded successfully',
-        trackId: createTrackDto.trackId,
-        trackName: createTrackDto.trackName,
-    }
-
+      message: 'Track uploaded successfully',
+      trackId: createTrackDto.trackId,
+      trackName: createTrackDto.trackName,
+    };
   }
 
   @Post('merge')
@@ -293,5 +291,23 @@ export class TrackController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.trackService.remove(+id);
+  }
+
+  @Get('thumbnail-url/:trackId')
+  async getThumbnailBasedOnTrackId(@Param('trackId') trackId: string) {
+    const url = await this.trackService.getThumbnailBasedOnTrackId(trackId);
+    if (!url) {
+      throw new NotFoundException('Thumbnail not found');
+    }
+    return { url };
+  }
+
+  @Get('lyrics/:trackId')
+  async getLyricsByTrackId(@Param('trackId') trackId: string) {
+    const lyrics = await this.trackService.getLyricsByTrackId(trackId);
+    if (!lyrics) {
+      throw new NotFoundException('Lyrics not found');
+    }
+    return { lyrics };
   }
 }
