@@ -40,14 +40,4 @@ export class CommentService {
     }
   }
 
-  async countCommentsBasedOnTrackId(trackId: string): Promise<number> {
-    try {
-      return await this.commentRepository.count({
-        where: { track: { id: trackId } },
-      });
-    } catch (error) {
-      console.error('Error counting comments for track:', error);
-      throw new InternalServerErrorException('Failed to count comments for track');
-    }
-  }
 }
