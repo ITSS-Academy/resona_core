@@ -283,16 +283,6 @@ export class TrackController {
     return this.trackService.searchTracks(query);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTrackDto: UpdateTrackDto) {
-    return this.trackService.update(+id, updateTrackDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.trackService.remove(+id);
-  }
-
   @Get('thumbnail-url/:trackId')
   async getThumbnailBasedOnTrackId(@Param('trackId') trackId: string) {
     const url = await this.trackService.getThumbnailBasedOnTrackId(trackId);
@@ -309,5 +299,18 @@ export class TrackController {
       throw new NotFoundException('Lyrics not found');
     }
     return { lyrics };
+  }
+
+  @Patch(':id')
+  async updateTrack(
+    @Param('id') trackId: string,
+    @Body() updateTrackDto: UpdateTrackDto,
+  ) {
+    return this.trackService.updateTrack(trackId, updateTrackDto);
+  }
+
+  @Delete(':id')
+  async deleteTrack(@Param('id') trackId: string) {
+    return this.trackService.deleteTrack(trackId);
   }
 }

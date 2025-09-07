@@ -40,4 +40,23 @@ export class CommentService {
     }
   }
 
+  async deleteComment(commentId: string, userId: string): Promise<{ message: string }> {
+    try {
+      const result = await this.commentRepository.delete({
+        id: commentId,
+        profile: { id: userId },
+      });
+
+      if (result.affected === 0) {
+        throw new BadRequestException('Comment not found or not authorized');
+      }
+
+      return { message: 'Comment deleted successfully' };
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      throw new BadRequestException('Failed to delete comment');
+    }
+  }
+
+
 }

@@ -21,11 +21,6 @@ export class CategoryService {
     return data;
   }
 
-
-  findAll() {
-    return `This action returns all category`;
-  }
-
   async getCategoryDetails(categoryId: string) {
     // 1. Get category info
     const { data: categoryData, error: categoryError } = await supabase
@@ -57,19 +52,6 @@ export class CategoryService {
       throw new BadRequestException('Failed to get tracks');
     }
     return { ...categoryData, tracks };
-  }
-
-
-  findOne(id: number) {
-    return `This action returns a #${id} category`;
-  }
-
-  update(id: number, updateCategoryDto: UpdateCategoryDto) {
-    return `This action updates a #${id} category`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} category`;
   }
 
   async search( query: string) {

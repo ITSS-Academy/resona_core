@@ -8,7 +8,9 @@ import {
   Put,
   Query,
   UseInterceptors,
-  UploadedFile, BadRequestException,
+  UploadedFile,
+  BadRequestException,
+  Patch,
 } from '@nestjs/common';
 import { PlaylistService } from './playlist.service';
 import { PlaylistTrackDto, CreatePlaylistDto } from './dto/create-playlist.dto';
@@ -71,24 +73,18 @@ export class PlaylistController {
     return this.playlistService.removeTrackFromPlaylist(playlistId, trackId);
   }
 
-  @Put('update-title')
-  updateTitle(
-    @Query()
-    params: UpdateTitleDto,
+  @Patch(':id')
+  @UseInterceptors(FileInterceptor('file')) // nhận file upload (thumbnail)
+  async updatePlaylist(
+    @Param('id') playlistId: string,
+    @Body() updateDto: UpdateTitleDto,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.playlistService.updatePlaylistTitle(params);
-  }
+    if (!updateDto.title && !file) {
+      throw new BadRequestException('Nothing to update');
+    }
 
-  @Put('update-thumbnail')
-  @UseInterceptors(FileInterceptor('file'))
-  updateThumbnail(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() body: UpdateThumbnailDto,
-  ) {
-    return this.playlistService.updatePlaylistThumbnailWithFile(
-      body.playlistId,
-      file,
-    );
+    return this.playlistService.updatePlaylist(playlistId, updateDto, file);
   }
 
   @Get('all-tracks/:id')
