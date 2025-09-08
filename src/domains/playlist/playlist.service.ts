@@ -18,17 +18,16 @@ export class PlaylistService {
     userId: string,
     thumbnail?: Express.Multer.File,
   ) {
-    let thumbnailPath: string | null =
-      'https://cajbdmrbdoctltruejun.supabase.co/storage/v1/object/public/thumbnail/492a1aa6-ab7f-4cc6-befc-c8a809db7f3b/thumbnail.jpg';
+    let thumbnailPath: string | null = null;
 
-    // 1. Tạo playlist (thumbnail mặc định)
+    // 1. Tạo playlist trước (thumbnail để tạm null)
     const { data: createdData, error: createError } = await supabase
       .from('playlist')
       .insert({
         title: createPlaylistDto.title,
-        thumbnailPath: thumbnailPath,
         profileId: userId,
         description: createPlaylistDto.description,
+        thumbnailPath: null, // để tạm null
       })
       .select()
       .single();
@@ -61,21 +60,25 @@ export class PlaylistService {
         .getPublicUrl(filePath);
 
       thumbnailPath = publicUrlData.publicUrl;
-
-      // Cập nhật playlist với thumbnail mới
-      const { error: updateError } = await supabase
-        .from('playlist')
-        .update({ thumbnailPath })
-        .eq('id', playlistId);
-
-      if (updateError) {
-        throw new BadRequestException(
-          'Failed to update playlist with thumbnail',
-        );
-      }
+    } else {
+      // Nếu không có file thì dùng default
+      thumbnailPath =
+        'https://cynhadjnrnyzycvxcpln.supabase.co/storage/v1/object/public/playlist-thumbnail/c6b2752d-c8e6-4c01-877f-105e17735995/playlist-thumbnail.jpg';
     }
 
-    // 3. Lấy playlist cuối cùng
+    // 3. Update playlist với thumbnailPath cuối cùng
+    const { error: updateError } = await supabase
+      .from('playlist')
+      .update({ thumbnailPath })
+      .eq('id', playlistId);
+
+    if (updateError) {
+      throw new BadRequestException(
+        'Failed to update playlist with thumbnail',
+      );
+    }
+
+    // 4. Lấy playlist cuối cùng
     const { data: finalData, error: finalError } = await supabase
       .from('playlist')
       .select()
