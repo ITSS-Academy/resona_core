@@ -40,4 +40,13 @@ export class CommentService {
     }
   }
 
+  async deleteComment(commentId: string){
+    const comment = await this.commentRepository.findOne({ where: { id: commentId } });
+    if (!comment) {
+      throw new BadRequestException('Comment not found');
+    }
+    await this.commentRepository.remove(comment);
+    return {deleted: true};
+  }
+
 }

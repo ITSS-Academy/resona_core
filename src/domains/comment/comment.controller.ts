@@ -21,4 +21,9 @@ export class CommentController {
     return this.commentService.getComments(trackId);
   }
 
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.commentService.deleteComment(id);
+  }
+
 }
