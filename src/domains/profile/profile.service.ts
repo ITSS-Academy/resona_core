@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { supabase } from '../../utils/supbabase';
@@ -25,8 +29,8 @@ export class ProfileService {
     return `This action removes a #${id} profile`;
   }
 
-  async search(username: string) {
-    const {data, error} = await supabase.from('profile').select().ilike('username', `%${username}%`);
+  async search(query: string) {
+    const {data, error} = await supabase.from('profile').select('*').ilike('name', `%${query}%`);
     if (error) {
       throw new Error(error.message);
     }
