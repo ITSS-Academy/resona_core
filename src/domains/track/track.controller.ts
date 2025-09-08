@@ -273,7 +273,7 @@ export class TrackController {
     return this.trackService.getTracksByCategoryId(categoryId);
   }
 
-  @Get(':trackId')
+  @Get('detail/:trackId')
   getTrackDetails(@Param('trackId') trackId: string) {
     return this.trackService.getTrackDetails(trackId);
   }
