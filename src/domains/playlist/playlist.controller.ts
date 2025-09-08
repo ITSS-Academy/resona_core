@@ -24,12 +24,14 @@ export class PlaylistController {
   constructor(private readonly playlistService: PlaylistService) {}
 
   @Post('create/:userId')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('thumbnail'))
   async create(
     @Param('userId') userId: string,
     @Body() createPlaylistDto: CreatePlaylistDto,
     @UploadedFile() thumbnail: Express.Multer.File,
   ) {
+    console.log('Thumbnail:', thumbnail);
+
     return this.playlistService.createPlaylist(
       createPlaylistDto,
       userId,
@@ -63,7 +65,7 @@ export class PlaylistController {
   }
 
   @Delete('delete')
-  delete(@Param('id') id: string) {
+  delete(@Query('id') id: string) {
     return this.playlistService.deletePlaylist(id);
   }
 

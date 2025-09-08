@@ -11,6 +11,7 @@ import {
 import { Profile } from '../../profile/entities/profile.entity';
 import { Track } from '../../track/entities/track.entity';
 import { PlaylistTrack } from '../../playlist_tracks/entities/playlist_track.entity';
+import { IsOptional } from 'class-validator';
 
 @Entity()
 export class Playlist {
@@ -20,7 +21,7 @@ export class Playlist {
   @Column('text')
   title: string;
 
-  @Column('text')
+  @Column('text', { nullable: true })
   thumbnailPath: string;
 
   @Column('text', { nullable: true })
