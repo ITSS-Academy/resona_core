@@ -22,25 +22,9 @@ export class CategoryController {
     return this.categoryService.search( query);
   }
 
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.categoryService.findOne(+id);
-  }
-
   // get tracks by category
   @Get('all-tracks/:id')
   getCategoryDetails(@Param('id') id: string) {
     return this.categoryService.getCategoryDetails(id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
-    return this.categoryService.update(+id, updateCategoryDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.categoryService.remove(+id);
   }
 }

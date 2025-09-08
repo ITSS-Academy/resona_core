@@ -8,7 +8,9 @@ import {
   Put,
   Query,
   UseInterceptors,
-  UploadedFile, BadRequestException,
+  UploadedFile,
+  BadRequestException,
+  Patch,
 } from '@nestjs/common';
 import { PlaylistService } from './playlist.service';
 import { PlaylistTrackDto, CreatePlaylistDto } from './dto/create-playlist.dto';
@@ -22,12 +24,14 @@ export class PlaylistController {
   constructor(private readonly playlistService: PlaylistService) {}
 
   @Post('create/:userId')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('thumbnail'))
   async create(
     @Param('userId') userId: string,
     @Body() createPlaylistDto: CreatePlaylistDto,
     @UploadedFile() thumbnail: Express.Multer.File,
   ) {
+    console.log('Thumbnail:', thumbnail);
+
     return this.playlistService.createPlaylist(
       createPlaylistDto,
       userId,
@@ -61,7 +65,7 @@ export class PlaylistController {
   }
 
   @Delete('delete')
-  delete(@Param('id') id: string) {
+  delete(@Query('id') id: string) {
     return this.playlistService.deletePlaylist(id);
   }
 
@@ -71,24 +75,18 @@ export class PlaylistController {
     return this.playlistService.removeTrackFromPlaylist(playlistId, trackId);
   }
 
-  @Put('update-title')
-  updateTitle(
-    @Query()
-    params: UpdateTitleDto,
+  @Patch(':id')
+  @UseInterceptors(FileInterceptor('file')) // nhận file upload (thumbnail)
+  async updatePlaylist(
+    @Param('id') playlistId: string,
+    @Body() updateDto: UpdateTitleDto,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.playlistService.updatePlaylistTitle(params);
-  }
+    if (!updateDto.title && !file) {
+      throw new BadRequestException('Nothing to update');
+    }
 
-  @Put('update-thumbnail')
-  @UseInterceptors(FileInterceptor('file'))
-  updateThumbnail(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() body: UpdateThumbnailDto,
-  ) {
-    return this.playlistService.updatePlaylistThumbnailWithFile(
-      body.playlistId,
-      file,
-    );
+    return this.playlistService.updatePlaylist(playlistId, updateDto, file);
   }
 
   @Get('all-tracks/:id')

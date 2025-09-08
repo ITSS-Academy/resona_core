@@ -12,6 +12,8 @@ import { PlaylistTracksModule } from './domains/playlist_tracks/playlist_tracks.
 import { CommentModule } from './domains/comment/comment.module';
 import { AuthModule } from './domains/auth/auth.module';
 import { SupabaseModule } from './domains/supabase/supabase.module';
+import { QueueModule } from './domains/queue/queue.module';
+import { HistoryModule } from './domains/history/history.module';
 
 @Module({
   imports: [
@@ -39,7 +41,9 @@ import { SupabaseModule } from './domains/supabase/supabase.module';
     PlaylistTracksModule,
     CommentModule,
     AuthModule,
-    SupabaseModule
+    SupabaseModule,
+    QueueModule,
+    HistoryModule
   ],
   controllers: [AppController],
   providers: [AppService],

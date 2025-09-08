@@ -47,32 +47,6 @@ export class TrackService {
     return data[0];
   }
 
-  findAll() {
-    return `This action returns all track`;
-  }
-
-  async getTrackById(id: number) {
-    return supabase
-      .from('track')
-      .select()
-      .eq('id', id)
-      .single()
-      .then(({ data, error }) => {
-        if (error) {
-          throw new BadRequestException(error);
-        }
-        return data;
-      });
-  }
-
-  update(id: number, updateTrackDto: UpdateTrackDto) {
-    return `This action updates a #${id} track`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} track`;
-  }
-
   async convertToAac(
     inputPath: string,
     opts: {
@@ -225,7 +199,43 @@ export class TrackService {
     return Buffer.from(buffer).toString('utf-8');
   }
 
+  async updateTrack(trackId: string, updateTrackDto: UpdateTrackDto) {
+    const { data, error } = await supabase
+      .from('track')
+      .update(updateTrackDto)
+      .eq('id', trackId)
+      .select()
+      .single();
 
+    if (error) {
+      throw new BadRequestException(error);
+    }
+
+    return data;
+  }
+
+  async deleteTrack(trackId: string) {
+    // Xóa track trong DB
+    const { error } = await supabase
+      .from('track')
+      .delete()
+      .eq('id', trackId);
+
+    if (error) {
+      throw new BadRequestException(error);
+    }
+
+    // Nếu muốn, có thể dọn luôn file liên quan (thumbnail, lyrics, audio)
+    try {
+      await supabase.storage.from('thumbnail').remove([`${trackId}/thumbnail.jpg`]);
+      await supabase.storage.from('lyrics').remove([`${trackId}/lyrics.txt`]);
+      await supabase.storage.from('tracks').remove([`${trackId}/${trackId}.aac`]);
+    } catch (storageError) {
+      console.warn('Failed to clean up storage:', storageError);
+    }
+
+    return { message: 'Track deleted successfully' };
+  }
 
 
 }

@@ -18,17 +18,16 @@ export class PlaylistService {
     userId: string,
     thumbnail?: Express.Multer.File,
   ) {
-    let thumbnailPath: string | null =
-      'https://cajbdmrbdoctltruejun.supabase.co/storage/v1/object/public/thumbnail/492a1aa6-ab7f-4cc6-befc-c8a809db7f3b/thumbnail.jpg';
+    let thumbnailPath: string | null = null;
 
-    // 1. Tạo playlist (thumbnail mặc định)
+    // 1. Tạo playlist trước (thumbnail để tạm null)
     const { data: createdData, error: createError } = await supabase
       .from('playlist')
       .insert({
         title: createPlaylistDto.title,
-        thumbnailPath: thumbnailPath,
         profileId: userId,
         description: createPlaylistDto.description,
+        thumbnailPath: null, // để tạm null
       })
       .select()
       .single();
@@ -61,21 +60,25 @@ export class PlaylistService {
         .getPublicUrl(filePath);
 
       thumbnailPath = publicUrlData.publicUrl;
-
-      // Cập nhật playlist với thumbnail mới
-      const { error: updateError } = await supabase
-        .from('playlist')
-        .update({ thumbnailPath })
-        .eq('id', playlistId);
-
-      if (updateError) {
-        throw new BadRequestException(
-          'Failed to update playlist with thumbnail',
-        );
-      }
+    } else {
+      // Nếu không có file thì dùng default
+      thumbnailPath =
+        'https://cynhadjnrnyzycvxcpln.supabase.co/storage/v1/object/public/playlist-thumbnail/c6b2752d-c8e6-4c01-877f-105e17735995/playlist-thumbnail.jpg';
     }
 
-    // 3. Lấy playlist cuối cùng
+    // 3. Update playlist với thumbnailPath cuối cùng
+    const { error: updateError } = await supabase
+      .from('playlist')
+      .update({ thumbnailPath })
+      .eq('id', playlistId);
+
+    if (updateError) {
+      throw new BadRequestException(
+        'Failed to update playlist with thumbnail',
+      );
+    }
+
+    // 4. Lấy playlist cuối cùng
     const { data: finalData, error: finalError } = await supabase
       .from('playlist')
       .select()
@@ -131,75 +134,85 @@ export class PlaylistService {
     return { message: 'Track removed from playlist successfully' };
   }
 
-  async updatePlaylistTitle(updateTitleDto: UpdateTitleDto) {
+  async updatePlaylist(
+    playlistId: string,
+    updateDto: UpdateTitleDto, // chứa title optional
+    file?: Express.Multer.File,
+  ) {
+    const bucket = 'thumbnail';
+    const folder = `${playlistId}`;
+
+    let thumbnailUrl: string | undefined;
+
+    // Nếu có file thumbnail mới
+    if (file) {
+      // 1. List files trong folder
+      const { data: listData, error: listError } = await supabase.storage
+        .from(bucket)
+        .list(folder);
+
+      if (listError) {
+        throw new BadRequestException('Failed to list thumbnails');
+      }
+
+      // 2. Xóa file cũ
+      if (listData && listData.length > 0) {
+        const filesToDelete = listData.map((f) => `${folder}/${f.name}`);
+        const { error: deleteError } = await supabase.storage
+          .from(bucket)
+          .remove(filesToDelete);
+        if (deleteError) {
+          throw new BadRequestException('Failed to delete old thumbnail');
+        }
+      }
+
+      // 3. Upload file mới
+      const ext = file.originalname.split('.').pop();
+      const filename = `thumbnail.${ext}`;
+      const path = `${folder}/${filename}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(path, file.buffer, {
+          contentType: file.mimetype,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        throw new BadRequestException('Failed to upload new thumbnail');
+      }
+
+      // 4. Lấy public URL
+      const { data: publicUrlData } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(path);
+
+      thumbnailUrl = publicUrlData.publicUrl;
+    }
+
+    // Gom fields cần update
+    const updateFields: any = {};
+    if (updateDto.title) updateFields.title = updateDto.title;
+    if (thumbnailUrl) updateFields.thumbnailPath = thumbnailUrl;
+
+    if (Object.keys(updateFields).length === 0) {
+      throw new BadRequestException('Nothing to update');
+    }
+
+    // Update playlist
     const { data, error } = await supabase
       .from('playlist')
-      .update({ title: updateTitleDto.title })
-      .eq('id', updateTitleDto.playlistId)
+      .update(updateFields)
+      .eq('id', playlistId)
       .select();
 
     if (error) {
-      throw new BadRequestException(error);
+      throw new BadRequestException('Failed to update playlist');
     }
 
     return data[0];
   }
 
-  async updatePlaylistThumbnailWithFile(
-    playlistId: string,
-    file: Express.Multer.File,
-  ) {
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
-    }
-    const bucket = 'thumbnail';
-    const folder = `${playlistId}`;
-    // 1. List files in the folder
-    const { data: listData, error: listError } = await supabase.storage
-      .from(bucket)
-      .list(folder);
-    if (listError) {
-      throw new BadRequestException('Failed to list thumbnails');
-    }
-    // 2. Delete old thumbnail if exists
-    if (listData && listData.length > 0) {
-      const filesToDelete = listData.map((f) => `${folder}/${f.name}`);
-      const { error: deleteError } = await supabase.storage
-        .from(bucket)
-        .remove(filesToDelete);
-      if (deleteError) {
-        throw new BadRequestException('Failed to delete old thumbnail');
-      }
-    }
-    // 3. Upload new file
-    const ext = file.originalname.split('.').pop();
-    const filename = `thumbnail.${ext}`;
-    const path = `${folder}/${filename}`;
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(path, file.buffer, {
-        contentType: file.mimetype,
-        upsert: true,
-      });
-    if (uploadError) {
-      throw new BadRequestException('Failed to upload new thumbnail');
-    }
-    // 4. Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(path);
-    const publicUrl = publicUrlData.publicUrl;
-    // 5. Update DB
-    const { data: updateData, error: updateError } = await supabase
-      .from('playlist')
-      .update({ thumbnailPath: publicUrl })
-      .eq('id', playlistId)
-      .select();
-    if (updateError) {
-      throw new BadRequestException('Failed to update playlist thumbnail');
-    }
-    return updateData[0];
-  }
 
   async getPlaylistTracksWithDetails(playlistId: string) {
     // 1. Get playlist info
@@ -303,16 +316,6 @@ export class PlaylistService {
     }
 
     return playlist;
-  }
-
-  async getRandomPlaylists(limit: number): Promise<Playlist[]> {
-    const qb = this.playlistRepository
-      .createQueryBuilder('playlist')
-      .leftJoinAndSelect('playlist.tracks', 'track')
-      .orderBy('RANDOM()') // PostgreSQL random
-      .take(limit);
-
-    return qb.getMany();
   }
 
   async searchPlaylists(query: string) {
