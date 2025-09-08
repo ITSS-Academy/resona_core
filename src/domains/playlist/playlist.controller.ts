@@ -52,7 +52,7 @@ export class PlaylistController {
     return this.playlistService.addToFavorite(songId, userId);
   }
 
-  @Get(':userId')
+  @Get('detail/:userId')
   getUserPlaylists(@Param('userId') userId: string) {
     return this.playlistService.getFavoritePlaylistByUserId(userId);
   }

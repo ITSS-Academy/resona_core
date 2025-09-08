@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -23,8 +32,8 @@ export class ProfileController {
   // }
 
   @Get('search')
-  search(@Param('search') username: string) {
-    return this.profileService.search(username);
+  search(@Query('search') query: string) {
+    return this.profileService.search(query);
   }
 
   @Patch(':id')
