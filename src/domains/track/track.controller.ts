@@ -323,4 +323,9 @@ export class TrackController {
   async getPopularTracks() {
     return this.trackService.getPopularTracks();
   }
+
+  @Get('same-artist/:trackId')
+  async getTracksBySameArtist(@Param('trackId') trackId: string) {
+    return this.trackService.getTracksBySameArtist(trackId);
+  }
 }
