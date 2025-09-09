@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { PlaylistService } from './playlist.service';
 import { PlaylistTrackDto, CreatePlaylistDto } from './dto/create-playlist.dto';
-import { UpdateThumbnailDto, UpdateTitleDto } from './dto/update-playlist.dto';
+import { UpdateTitleDto } from './dto/update-playlist.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { uuid } from '@supabase/supabase-js/dist/main/lib/helpers';
 import { supabase } from '../../utils/supbabase';

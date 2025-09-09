@@ -27,7 +27,8 @@ export class PlaylistService {
         title: createPlaylistDto.title,
         profileId: userId,
         description: createPlaylistDto.description,
-        thumbnailPath: null, // để tạm null
+        isPublic: createPlaylistDto.isPublic ?? true,
+        thumbnailPath: null,
       })
       .select()
       .single();
@@ -187,7 +188,8 @@ export class PlaylistService {
         .from(bucket)
         .getPublicUrl(path);
 
-      thumbnailUrl = publicUrlData.publicUrl;
+      thumbnailUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+
     }
 
     // Gom fields cần update

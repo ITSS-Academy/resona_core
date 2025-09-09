@@ -6,14 +6,29 @@ import { uuid } from '@supabase/supabase-js/dist/main/lib/helpers';
 
 @Injectable()
 export class QueueService {
-  async addSongToQueue(userId: string, trackId: string, position?: number) {
+  async addSongToQueue(userId: string, trackId: string) {
+    // Lấy vị trí lớn nhất hiện tại trong queue của user
+    const { data: maxData, error: maxError } = await supabase
+      .from('queue')
+      .select('position')
+      .eq('profileId', userId)
+      .order('position', { ascending: false })
+      .limit(1);
+
+    if (maxError) {
+      throw new BadRequestException('Failed to get queue max position');
+    }
+
+    const nextPosition = maxData?.[0]?.position + 1 || 0;
+
+    // Thêm bài mới vào cuối
     const { data, error } = await supabase
       .from('queue')
       .insert({
         id: uuid(),
         profileId: userId,
         trackId: trackId,
-        position: position ?? 0,
+        position: nextPosition,
       })
       .select()
       .single();
@@ -25,6 +40,7 @@ export class QueueService {
 
     return data;
   }
+
 
   async getQueueByUser(userId: string) {
     const { data, error } = await supabase

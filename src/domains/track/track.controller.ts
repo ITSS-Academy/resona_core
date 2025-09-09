@@ -258,7 +258,7 @@ export class TrackController {
     return this.trackService.getFavouriteTracks(userId);
   }
 
-  @Patch(':trackId/increase-view')
+  @Patch('increase-view/:trackId')
   async increaseView(@Param('trackId') trackId: string) {
     return this.trackService.incrementViewCount(trackId);
   }
@@ -312,5 +312,15 @@ export class TrackController {
   @Delete(':id')
   async deleteTrack(@Param('id') trackId: string) {
     return this.trackService.deleteTrack(trackId);
+  }
+
+  @Get('new-released')
+  async getNewReleasedTracks() {
+    return this.trackService.getNewReleasedTracks();
+  }
+
+  @Get('popular')
+  async getPopularTracks() {
+    return this.trackService.getPopularTracks();
   }
 }
