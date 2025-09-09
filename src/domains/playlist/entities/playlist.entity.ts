@@ -1,5 +1,6 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   JoinTable,
@@ -26,6 +27,12 @@ export class Playlist {
 
   @Column('text', { nullable: true })
   description: string;
+
+  @CreateDateColumn({ type: 'timestamptz' })
+  createdAt: Date;
+
+  @Column('boolean', { default: true })
+  isPublic: boolean;
 
   @ManyToOne(() => Profile, (profile) => profile.playlists)
   @JoinColumn()

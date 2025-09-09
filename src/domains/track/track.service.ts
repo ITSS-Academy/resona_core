@@ -262,5 +262,31 @@ export class TrackService {
     return tracks;
   }
 
+  async getNewReleasedTracks() {
+    return supabase
+      .from('track')
+      .select('*')
+      .order('createdAt', { ascending: false })
+      .limit(20)
+      .then(({ data, error }) => {
+        if (error) {
+          throw new BadRequestException(error);
+        }
+        return data;
+      });
+  }
 
+  async getPopularTracks() {
+    return supabase
+      .from('track')
+      .select('*')
+      .order('viewCount', { ascending: false })
+      .limit(20)
+      .then(({ data, error }) => {
+        if (error) {
+          throw new BadRequestException(error);
+        }
+        return data;
+      });
+  }
 }

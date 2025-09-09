@@ -21,10 +21,9 @@ export class QueueController {
   @Post()
   async addSongToQueue(
     @Body('userId') userId: string,
-    @Body('trackId') trackId: string,
-    @Body('position') position?: number,
+    @Body('trackId') trackId: string
   ) {
-    return this.queueService.addSongToQueue(userId, trackId, position);
+    return this.queueService.addSongToQueue(userId, trackId);
   }
 
   // Lấy queue theo user
