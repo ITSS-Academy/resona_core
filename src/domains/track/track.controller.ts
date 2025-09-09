@@ -313,4 +313,9 @@ export class TrackController {
   async deleteTrack(@Param('id') trackId: string) {
     return this.trackService.deleteTrack(trackId);
   }
+
+  @Get('same-artist/:trackId')
+  async getTracksBySameArtist(@Param('trackId') trackId: string) {
+    return this.trackService.getTracksBySameArtist(trackId);
+  }
 }
