@@ -27,4 +27,9 @@ export class CategoryController {
   getCategoryDetails(@Param('id') id: string) {
     return this.categoryService.getCategoryDetails(id);
   }
+
+  @Get('detail-by-track/:trackId')
+  getCategoryDetailByTrackId(@Param('trackId') trackId: string) {
+    return this.categoryService.getCategoryDetailByTrackId(trackId);
+  }
 }

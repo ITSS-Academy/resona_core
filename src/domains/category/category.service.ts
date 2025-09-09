@@ -64,4 +64,18 @@ export class CategoryService {
     }
     return data;
   }
+
+  async getCategoryDetailByTrackId(trackId: string) {
+    // 1. Get the track to find its categoryId
+    const { data: track, error: trackError } = await supabase
+      .from('track')
+      .select('categoryId')
+      .eq('id', trackId)
+      .single();
+    if (trackError || !track) {
+      throw new BadRequestException('Track not found');
+    }
+    // 2. Use existing method to get category details
+    return this.getCategoryDetails(track.categoryId);
+  }
 }

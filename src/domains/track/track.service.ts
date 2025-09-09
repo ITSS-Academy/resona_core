@@ -237,6 +237,31 @@ export class TrackService {
     return { message: 'Track deleted successfully' };
   }
 
+  async getTracksBySameArtist(trackId: string): Promise<Track[]> {
+    // Get the track to retrieve artistName
+    const { data: track, error } = await supabase
+      .from('track')
+      .select('artistName')
+      .eq('id', trackId)
+      .single();
+
+    if (error || !track) {
+      throw new BadRequestException('Track not found');
+    }
+
+    // Find all tracks with the same artistName
+    const { data: tracks, error: tracksError } = await supabase
+      .from('track')
+      .select('*')
+      .eq('artistName', track.artistName);
+
+    if (tracksError) {
+      throw new BadRequestException(tracksError);
+    }
+
+    return tracks;
+  }
+
   async getNewReleasedTracks() {
     return supabase
       .from('track')
