@@ -102,4 +102,9 @@ export class PlaylistController {
   async getPlaylist(@Param('uid') uid: string) {
     return this.playlistService.getAllPlaylistsByUser(uid);
   }
+
+  @Get('top-playlists')
+  async getTopPlaylists() {
+    return this.playlistService.getTopPlaylists();
+  }
 }

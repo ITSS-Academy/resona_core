@@ -361,15 +361,13 @@ export class PlaylistService {
     return data;
   }
 
-  async getPopularPlaylists() {
-    const { data, error } = await supabase
-      .from('playlist')
-      .select('*, tracks:playlist_tracks(trackId)')
-      .order('createdAt', { ascending: false })
-      .limit(10);
+  async getTopPlaylists() {
+    const { data, error } = await supabase.rpc('get_top_playlists');
+
     if (error) {
-      throw new BadRequestException('Failed to get popular playlists');
+      throw new BadRequestException('Failed to fetch top playlists');
     }
+
     return data;
   }
 }

@@ -95,15 +95,15 @@ export class ProfileService {
     const { entities, raw } = await this.profileRepository
       .createQueryBuilder('profile')
       .leftJoin('profile.followers', 'f')
-      .addSelect('COUNT(f.id)', '"followerCount"') // alias giữ nguyên chữ hoa
+      .addSelect('COUNT(f.id)', 'count1') // alias giữ nguyên chữ hoa
       .groupBy('profile.id')
-      .orderBy('"followerCount"', 'DESC')
+      .orderBy('count1', 'DESC')
       .limit(limit)
       .getRawAndEntities();
 
     return entities.map((profile, i) => ({
       ...profile,
-      followerCount: Number(raw[i].followerCount ?? 0),
+      followerCount: Number(raw[i].count1 ?? 0),
     }));
   }
 
