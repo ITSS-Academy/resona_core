@@ -13,9 +13,11 @@ export class AuthService {
   async verifyToken(idToken: string): Promise<any> {
     try {
       const decodedToken = await admin.auth().verifyIdToken(idToken);
-      const { uid, email, name, photoURL } = decodedToken;
+      const { uid, email, name, picture } = decodedToken;
 
       console.log('Decoded Token:', decodedToken);
+      console.log('UID:', uid);
+      console.log(picture);
 
       const { data, error, count } = await this.supabaseProvider
         .getClient()
@@ -31,7 +33,7 @@ export class AuthService {
         const { data, error } = await this.supabaseProvider
           .getClient()
           .from('profile')
-          .insert([{ id: uid, email, name, photoUrl: photoURL || 'https://sbcf.fr/wp-content/uploads/2018/03/sbcf-default-avatar.png'}]);
+          .insert([{ id: uid, email, name, photoUrl: picture }]);
 
         if (error) {
           throw new HttpException(error.message, 400);
