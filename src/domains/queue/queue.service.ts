@@ -157,7 +157,6 @@ export class QueueService {
     return data;
   }
 
-
   async addPlaylistToQueue(userId: string, playlistId: string) {
     // 1️⃣ Lấy vị trí lớn nhất hiện tại trong queue của user
     const { data: maxData, error: maxError } = await supabase
