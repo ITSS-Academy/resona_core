@@ -54,9 +54,13 @@ export class PlaylistController {
     return this.playlistService.addToFavorite(songId, userId);
   }
 
-  @Get('detail/:userId')
-  getUserPlaylists(@Param('userId') userId: string) {
-    return this.playlistService.getFavoritePlaylistByUserId(userId);
+  @Get('favorite/:userId')
+  async getFavouriteTracks(@Param('userId') userId: string) {
+    try {
+      return await this.playlistService.getFavouriteTracks(userId);
+    } catch (err) {
+      throw new BadRequestException(err.message);
+    }
   }
 
   @Get('search')

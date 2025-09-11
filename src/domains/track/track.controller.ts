@@ -221,8 +221,8 @@ export class TrackController {
     // Push to supabase storage named tracks
     const { data: track, error } = await supabase.storage
       .from('tracks')
-      .upload(`${trackId}/${trackId}.aac`, fs.readFileSync(output), {
-        contentType: 'audio/aac',
+      .upload(`${trackId}/${trackId}.m4a`, fs.readFileSync(output), {
+        contentType: 'audio/m4a',
         upsert: true,
       });
 
@@ -327,5 +327,10 @@ export class TrackController {
   @Get('same-artist/:trackId')
   async getTracksBySameArtist(@Param('trackId') trackId: string) {
     return this.trackService.getTracksBySameArtist(trackId);
+  }
+
+  @Get('reset-duration')
+  async resetAllDuration() {
+    return this.trackService.resetAllDurationAndMigrateToM4A();
   }
 }

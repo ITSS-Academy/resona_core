@@ -3,6 +3,7 @@ import { CreateQueueDto } from './dto/create-queue.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
 import { supabase } from '../../utils/supbabase';
 import { uuid } from '@supabase/supabase-js/dist/main/lib/helpers';
+import { Track } from '../track/entities/track.entity';
 
 @Injectable()
 export class QueueService {
@@ -134,5 +135,77 @@ export class QueueService {
 
     return { message: 'Queue refilled', tracks: randomTracks };
   }
+
+  async playSongNow(userId: string, track: Track) {
+    // 1. Clear toàn bộ queue
+    await this.clearQueue(userId);
+
+    // 2. Thêm track vào đầu queue (position = 0)
+    const { data, error } = await supabase
+      .from('queue')
+      .insert({
+        id: uuid(),
+        profileId: userId,
+        trackId: track.id,
+        position: 0,
+      })
+      .select()
+      .single();
+
+    if (error) throw new BadRequestException('Failed to add song to queue');
+
+    return data;
+  }
+
+
+  async addPlaylistToQueue(userId: string, playlistId: string) {
+    // 1️⃣ Lấy vị trí lớn nhất hiện tại trong queue của user
+    const { data: maxData, error: maxError } = await supabase
+      .from('queue')
+      .select('position')
+      .eq('profileId', userId)
+      .order('position', { ascending: false })
+      .limit(1);
+
+    if (maxError) {
+      throw new BadRequestException('Failed to get queue max position');
+    }
+
+    const nextPosition = maxData?.[0]?.position + 1 || 0;
+
+    // 2️⃣ Lấy tất cả track trong playlist
+    const { data: playlistTracks, error: playlistError } = await supabase
+      .from('playlist_tracks')
+      .select('trackId')
+      .eq('playlistId', playlistId)
+      .order('createAt', { ascending: true });
+
+    if (playlistError) {
+      throw new BadRequestException('Failed to get playlist tracks');
+    }
+
+    // 3️⃣ Kiểm tra playlist rỗng
+    if (!playlistTracks || playlistTracks.length === 0) {
+      return { message: 'Playlist is empty', trackCount: 0 };
+    }
+
+    // 4️⃣ Chuẩn bị batch insert
+    const rows = playlistTracks.map((pt, i) => ({
+      id: uuid(),
+      profileId: userId,
+      trackId: pt.trackId,
+      position: nextPosition + i,
+    }));
+
+    // 5️⃣ Insert batch và trả về data
+    const { data, error } = await supabase.from('queue').insert(rows).select();
+
+    if (error) {
+      throw new BadRequestException('Failed to add playlist to queue');
+    }
+
+    return { message: 'Playlist added to queue', trackCount: playlistTracks.length, data };
+  }
+
 
 }

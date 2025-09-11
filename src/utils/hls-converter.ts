@@ -19,14 +19,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-type ConvertOptions = {
-  bitrate?: string; // vd '192k'
-  sampleRate?: number; // vd 44100, 48000
-  channels?: number; // 1 (mono), 2 (stereo)
-  outPath?: string; // đường dẫn output .aac
-  overwrite?: boolean; // cho phép ghi đè
-};
-
 export async function convertAudioToAac(
   inputPath: string,
   opts: ConvertOptions = {},
@@ -190,3 +182,189 @@ export async function getAudioDuration(inputPath: string): Promise<number> {
   console.log('stdout:', stdout);
   return parseFloat(stdout.trim()); // seconds
 }
+
+export async function getAACAudioDuration(inputPath: string): Promise<number> {
+  const { $ } = await import('zx');
+  const slash = (await import('slash')).default;
+  const path = await import('path');
+  const fs = await import('fs/promises');
+
+  const safeIn = slash(inputPath);
+
+  // Nếu là .aac thì remux sang .m4a tạm để đọc duration chính xác
+  let probeTarget = safeIn;
+  let tmpOut: string | null = null;
+
+  if (safeIn.toLowerCase().endsWith('.aac')) {
+    tmpOut = slash(path.resolve(safeIn + '.tmp.m4a'));
+    await $`ffmpeg -v error -fflags +genpts -i ${safeIn} -c:a copy ${tmpOut}`;
+    probeTarget = tmpOut;
+  }
+
+  // Dùng format=duration (chuẩn hơn cho container)
+  const { stdout } =
+    await $`ffprobe -v error -show_entries format=duration -of default=nk=1:nw=1 ${probeTarget}`;
+
+  // Dọn file tạm nếu có
+  if (tmpOut) {
+    try {
+      await fs.unlink(tmpOut);
+    } catch (e) {
+      console.warn('Could not delete temp file:', tmpOut, e);
+    }
+  }
+
+  return parseFloat(stdout.trim()); // seconds
+}
+
+export async function convertAacToM4a(
+  inputPath: string,
+  outPath?: string,
+  overwrite = false
+): Promise<string> {
+  if (!inputPath) throw new Error('Missing inputPath');
+  const absInput = path.resolve(inputPath);
+  if (!fs.existsSync(absInput)) throw new Error(`Input not found: ${absInput}`);
+
+  const outFile = outPath
+    ? path.resolve(outPath)
+    : path.join(
+      path.dirname(absInput),
+      `${path.parse(absInput).name}.m4a`
+    );
+
+  if (!overwrite && fs.existsSync(outFile)) {
+    throw new Error(
+      `Output already exists: ${outFile} (use overwrite = true to replace)`
+    );
+  }
+
+  await assertFfmpeg();
+
+  const slash = (await import('slash')).default;
+  const safeIn = slash(absInput);
+  const safeOut = slash(outFile);
+
+  // Remux: copy stream, không re-encode
+  const args = [
+    overwrite ? '-y' : '-n',
+    '-i',
+    safeIn,
+    '-c:a',
+    'copy',
+    '-bsf:a',
+    'aac_adtstoasc', // chuyển ADTS → ASC cho MP4 container
+    '-movflags',
+    '+faststart',    // metadata nằm đầu file để browser đọc duration ngay
+    safeOut,
+  ];
+
+  const { $ } = await import('zx');
+  $.verbose = false;
+  try {
+    await $`ffmpeg ${args}`;
+  } catch (err: any) {
+    throw new Error(`FFmpeg failed: ${err?.stderr || err?.message || err}`);
+  }
+
+  if (!fs.existsSync(outFile)) {
+    throw new Error('M4A output not found after ffmpeg finished.');
+  }
+
+  return outFile;
+}
+
+type ConvertOptions = {
+  bitrate?: string;     // '192k'
+  sampleRate?: number;  // 44100
+  channels?: number;    // 2
+  outPath?: string;
+  overwrite?: boolean;  // false
+  preferCopyIfAac?: boolean; // true → nếu input là AAC thì copy stream
+};
+
+export async function convertAudioToM4a(
+  inputPath: string,
+  opts: ConvertOptions = {},
+) {
+  const {
+    bitrate = '192k',
+    sampleRate = 44100,
+    channels = 2,
+    outPath,
+    overwrite = false,
+    preferCopyIfAac = true,
+  } = opts;
+
+  // 1) Kiểm tra input
+  if (!inputPath) throw new Error('Missing inputPath');
+  const absInput = path.resolve(inputPath);
+  if (!fs.existsSync(absInput)) throw new Error(`Input not found: ${absInput}`);
+
+  // 2) Tạo output .m4a
+  const outFile = outPath
+    ? path.resolve(outPath)
+    : path.join(path.dirname(absInput), `${path.parse(absInput).name}.m4a`);
+
+  if (!overwrite && fs.existsSync(outFile)) {
+    throw new Error(`Output already exists: ${outFile} (use --overwrite to replace)`);
+  }
+
+  // 3) Kiểm tra ffmpeg/ffprobe
+  await assertFfmpeg();
+
+  // 4) Chuẩn hoá path
+  const slash = (await import('slash')).default;
+  const safeIn = slash(absInput);
+  const safeOut = slash(outFile);
+
+  // 5) Thử nhận diện codec audio đầu vào (để quyết định copy hay encode)
+  let isAacInput = false;
+  try {
+    const { $ } = await import('zx');
+    const { stdout } = await $`ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nk=1:nw=1 ${safeIn}`;
+    isAacInput = stdout.trim() === 'aac';
+  } catch {
+    // Nếu ffprobe fail, coi như không chắc codec → encode cho chắc
+    isAacInput = false;
+  }
+
+  // 6) Ghép args ffmpeg
+  const args: string[] = [overwrite ? '-y' : '-n', '-i', safeIn, '-vn'];
+
+  if (preferCopyIfAac && isAacInput) {
+    // Remux (copy) AAC ADTS/ASC sang MP4/M4A
+    args.push(
+      '-c:a', 'copy',
+      '-bsf:a', 'aac_adtstoasc', // chuyển ADTS → ASC cho MP4 container
+    );
+  } else {
+    // Encode sang AAC trong M4A
+    args.push(
+      '-c:a', 'aac',
+      '-b:a', `${bitrate}`,
+      '-ar', `${sampleRate}`,
+      '-ac', `${channels}`,
+    );
+  }
+
+  // Đặt moov lên đầu để <audio> đọc metadata/duration sớm
+  args.push('-movflags', '+faststart', safeOut);
+
+  // 7) Chạy ffmpeg
+  const { $ } = await import('zx');
+  $.verbose = false;
+  try {
+    await $`ffmpeg ${args}`;
+  } catch (err: any) {
+    throw new Error(`FFmpeg failed: ${err?.stderr || err?.message || err}`);
+  }
+
+  if (!fs.existsSync(outFile)) {
+    throw new Error('M4A output not found after ffmpeg finished.');
+  }
+
+  return outFile;
+}
+
+

@@ -261,12 +261,12 @@ export class PlaylistService {
   }
 
   async addToFavorite(trackId: string, userId: string) {
-    // 1. Tìm playlist Favorite
+    // 1. Tìm playlist Favorite hệ thống
     const { data: playlist } = await supabase
       .from('playlist')
       .select('*')
-      .eq('title', 'Favorite')
       .eq('profileId', userId)
+      .eq('isSystem', true)
       .single();
 
     let playlistId = playlist?.id;
@@ -279,6 +279,7 @@ export class PlaylistService {
           title: 'Favorite',
           profileId: userId,
           thumbnailPath: 'assets/images/favorite.png',
+          isSystem: true,   // đánh dấu là playlist hệ thống
         })
         .select()
         .single();
@@ -289,7 +290,7 @@ export class PlaylistService {
       playlistId = newPlaylist.id;
     }
 
-    // 3. Thêm bài hát vào playlist_song
+    // 3. Thêm bài hát vào playlist_tracks
     const { error: insertError } = await supabase
       .from('playlist_tracks')
       .insert({
@@ -304,20 +305,49 @@ export class PlaylistService {
     return { message: 'Song added to Favorite' };
   }
 
-  async getFavoritePlaylistByUserId(userId: string) {
-    // 1. Tìm playlist Favorite
-    const { data: playlist, error } = await supabase
+  async getFavouriteTracks(userId: string) {
+    // 1. Lấy playlist Favorite hệ thống của user
+    const { data: playlist, error: playlistError } = await supabase
       .from('playlist')
       .select('*')
-      .eq('title', 'Favorite')
       .eq('profileId', userId)
+      .eq('isSystem', true)
       .single();
 
-    if (error) {
+    if (playlistError) {
+      if (playlistError.code === 'PGRST116') { // không tìm thấy
+        return [];
+      }
       throw new BadRequestException('Failed to get favorite playlist');
     }
 
-    return playlist;
+    const playlistId = playlist.id;
+
+    // 2. Lấy trackId từ playlist_tracks
+    const { data: playlistTracks, error: tracksError } = await supabase
+      .from('playlist_tracks')
+      .select('trackId')
+      .eq('playlistId', playlistId);
+
+    if (tracksError) {
+      throw new BadRequestException('Failed to get tracks of favorite playlist');
+    }
+
+    const trackIds = playlistTracks.map((pt) => pt.trackId);
+
+    if (trackIds.length === 0) return [];
+
+    // 3. Lấy thông tin chi tiết track
+    const { data: tracks, error: trackDetailsError } = await supabase
+      .from('track')
+      .select('*')
+      .in('id', trackIds);
+
+    if (trackDetailsError) {
+      throw new BadRequestException('Failed to get track details');
+    }
+
+    return tracks;
   }
 
   async searchPlaylists(query: string) {
@@ -327,6 +357,18 @@ export class PlaylistService {
       .ilike('title', `%${query}%`);
     if (error) {
       throw new BadRequestException('Failed to search playlists');
+    }
+    return data;
+  }
+
+  async getPopularPlaylists() {
+    const { data, error } = await supabase
+      .from('playlist')
+      .select('*, tracks:playlist_tracks(trackId)')
+      .order('createdAt', { ascending: false })
+      .limit(10);
+    if (error) {
+      throw new BadRequestException('Failed to get popular playlists');
     }
     return data;
   }

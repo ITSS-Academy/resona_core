@@ -6,9 +6,18 @@ import {
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { supabase } from '../../utils/supbabase';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Profile } from './entities/profile.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ProfileService {
+  constructor(
+    @InjectRepository(Profile)
+    private readonly profileRepository: Repository<Profile>,
+  ) {
+  }
+
   create(createProfileDto: CreateProfileDto) {
     return 'This action adds a new profile';
   }
@@ -49,15 +58,15 @@ export class ProfileService {
     // 1. Lấy danh sách followerId
     const { data: followers, error } = await supabase
       .from('profile_followers')
-      .select('followerId')
-      .eq('followingId', profileId);
+      .select('followingId')
+      .eq('followerId', profileId); // profileId = người được follow
 
     if (error) throw new Error(error.message);
 
-    if (!followers.length) return [];
+    if (!followers?.length) return [];
 
-    // 2. Dùng followerId để lấy thông tin profile
-    const ids = followers.map(f => f.followerId);
+    // 2. Lấy thông tin profile của các follower
+    const ids = followers.map(f => f.followingId);
 
     const { data: profiles, error: profileError } = await supabase
       .from('profile')
@@ -68,7 +77,6 @@ export class ProfileService {
 
     return profiles;
   }
-
 
 
   async getProfileById(profileId: string) {
@@ -83,15 +91,23 @@ export class ProfileService {
     return data;
   }
 
-  async getPopularProfiles() {
-    const { data, error } = await supabase
-      .from('profile')
-      .select('*, followers:profileFollowers(followerId)')
-      .order('followers', { foreignTable: 'profileFollowers', ascending: false, nullsFirst: false })
-      .limit(10);
-    if (error) {
-      throw new Error(error.message);
-    }
-    return data;
+  async getPopularProfiles(limit = 10): Promise<(Profile & { followerCount: number })[]> {
+    const { entities, raw } = await this.profileRepository
+      .createQueryBuilder('profile')
+      .leftJoin('profile.followers', 'f')
+      .addSelect('COUNT(f.id)', '"followerCount"') // alias giữ nguyên chữ hoa
+      .groupBy('profile.id')
+      .orderBy('"followerCount"', 'DESC')
+      .limit(limit)
+      .getRawAndEntities();
+
+    return entities.map((profile, i) => ({
+      ...profile,
+      followerCount: Number(raw[i].followerCount ?? 0),
+    }));
   }
+
+
+
+
 }

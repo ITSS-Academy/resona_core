@@ -74,4 +74,27 @@ export class QueueController {
 
     return this.queueService.refillQueue(userId, limitNumber);
   }
+
+  @Post('play-now/:userId')
+  async playSongNow(
+    @Param('userId') userId: string,
+    @Body('trackId') trackId: string,
+  ) {
+    if (!trackId) {
+      throw new BadRequestException('trackId is required');
+    }
+
+    // gọi service để clear queue và thêm track mới
+    const data = await this.queueService.playSongNow(userId, { id: trackId } as any);
+
+    return { message: 'Track is now playing', track: data };
+  }
+
+  @Post('add-playlist/:userId')
+  async addPlaylistToQueue(
+    @Param('userId') userId: string,
+    @Body('playlistId') playlistId: string,
+  ) {
+    return this.queueService.addPlaylistToQueue(userId, playlistId);
+  }
 }

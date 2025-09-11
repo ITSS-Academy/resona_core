@@ -56,8 +56,13 @@ export class ProfileController {
     return this.profileService.getFollowers(profileId);
   }
 
-  @Get(':profileId')
-  async getProfile(@Param('profileId') profileId: string) {
-    return this.profileService.getProfileById(profileId);
+  // @Get(':profileId')
+  // async getProfile(@Param('profileId') profileId: string) {
+  //   return this.profileService.getProfileById(profileId);
+  // }
+
+  @Get('popular')
+  async getPopularProfiles() {
+    return this.profileService.getPopularProfiles();
   }
 }

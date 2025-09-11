@@ -34,6 +34,9 @@ export class Playlist {
   @Column('boolean', { default: true })
   isPublic: boolean;
 
+  @Column({ default: false })
+  isSystem: boolean;
+
   @ManyToOne(() => Profile, (profile) => profile.playlists)
   @JoinColumn()
   profile: Profile;
