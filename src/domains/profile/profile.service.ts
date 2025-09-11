@@ -107,7 +107,30 @@ export class ProfileService {
     }));
   }
 
+  async getProfileByTrackId(trackId: string) {
+    // 1. Get the track to find ownerId
+    const { data: track, error: trackError } = await supabase
+      .from('track')
+      .select('ownerId')
+      .eq('id', trackId)
+      .single();
 
+    if (trackError || !track) {
+      throw new Error('Track not found');
+    }
 
+    // 2. Get the profile by ownerId
+    const { data: profile, error: profileError } = await supabase
+      .from('profile')
+      .select('*')
+      .eq('id', track.ownerId)
+      .single();
+
+    if (profileError || !profile) {
+      throw new Error('Profile not found');
+    }
+
+    return profile as Profile;
+  }
 
 }

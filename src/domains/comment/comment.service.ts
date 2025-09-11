@@ -27,11 +27,27 @@ export class CommentService {
     }
   }
 
-  async getComments(songId: string): Promise<Comment[]> {
+  // async getComments(songId: string): Promise<Comment[]> {
+  //   try {
+  //     return await this.commentRepository.find({
+  //       where: { track: { id: songId } },
+  //       relations: ['profile'], // nhớ sửa lại đúng quan hệ trong entity
+  //       order: { createdAt: 'DESC' },
+  //     });
+  //   } catch (error) {
+  //     console.error('Error fetching comments:', error);
+  //     throw new InternalServerErrorException('Failed to fetch comments');
+  //   }
+  // }
+
+  async getComments(trackId: string): Promise<Comment[]> {
+    if (!trackId) {
+      throw new BadRequestException('trackId is required');
+    }
     try {
       return await this.commentRepository.find({
-        where: { track: { id: songId } },
-        relations: ['profile'], // nhớ sửa lại đúng quan hệ trong entity
+        where: { track: { id: trackId } },
+        relations: ['profile'], // Ensure 'profile' matches your entity relation
         order: { createdAt: 'DESC' },
       });
     } catch (error) {
