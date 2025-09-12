@@ -136,7 +136,7 @@ export class QueueService {
     return { message: 'Queue refilled', tracks: randomTracks };
   }
 
-  async playSongNow(userId: string, track: Track) {
+  async playSongNow(userId: string, trackId: string) {
     // 1. Clear toàn bộ queue
     await this.clearQueue(userId);
 
@@ -146,7 +146,7 @@ export class QueueService {
       .insert({
         id: uuid(),
         profileId: userId,
-        trackId: track.id,
+        trackId: trackId,
         position: 0,
       })
       .select()

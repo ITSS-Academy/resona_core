@@ -85,9 +85,9 @@ export class QueueController {
     }
 
     // gọi service để clear queue và thêm track mới
-    const data = await this.queueService.playSongNow(userId, { id: trackId } as any);
+    const data = await this.queueService.playSongNow(userId, trackId);
 
-    return { message: 'Track is now playing', track: data };
+    return { track: data };
   }
 
   @Post('add-playlist/:userId')

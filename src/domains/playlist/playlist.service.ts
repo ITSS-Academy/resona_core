@@ -278,8 +278,8 @@ export class PlaylistService {
         .insert({
           title: 'Favorite',
           profileId: userId,
-          thumbnailPath: 'assets/images/favorite.png',
-          isSystem: true,   // đánh dấu là playlist hệ thống
+          thumbnailPath: './assets/images/favorite.jpg',
+          isSystem: true,
         })
         .select()
         .single();

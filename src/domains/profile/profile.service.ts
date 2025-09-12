@@ -84,7 +84,6 @@ export class ProfileService {
       .from('profile')
       .select('*')
       .eq('id', profileId)
-      .single();
     if (error) {
       throw new Error(error.message);
     }

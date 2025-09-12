@@ -56,7 +56,7 @@ export class ProfileController {
     return this.profileService.getFollowers(profileId);
   }
 
-  @Get(':profileId')
+  @Get('detail/:profileId')
   async getProfile(@Param('profileId') profileId: string) {
     return this.profileService.getProfileById(profileId);
   }
