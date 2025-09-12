@@ -87,7 +87,7 @@ export class ProfileService {
     if (error) {
       throw new Error(error.message);
     }
-    return data;
+    return data[0];
   }
 
   async getPopularProfiles(limit = 10): Promise<(Profile & { followerCount: number })[]> {
