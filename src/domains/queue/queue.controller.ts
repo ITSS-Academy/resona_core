@@ -97,4 +97,12 @@ export class QueueController {
   ) {
     return this.queueService.addPlaylistToQueue(userId, playlistId);
   }
+
+  @Post('add-category/:userId')
+  async addCategoryToQueue(
+    @Param('userId') userId: string,
+    @Body('categoryId') categoryId: string,
+  ) {
+    return this.queueService.addCategoryToQueue(userId, categoryId);
+  }
 }

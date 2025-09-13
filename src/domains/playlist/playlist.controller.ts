@@ -51,7 +51,7 @@ export class PlaylistController {
     @Param('userId') userId: string,
     @Param('songId') songId: string,
   ) {
-    return this.playlistService.addToFavorite(songId, userId);
+    return this.playlistService.addToFavorite(userId, songId);
   }
 
   @Get('favorite/:userId')
@@ -61,6 +61,14 @@ export class PlaylistController {
     } catch (err) {
       throw new BadRequestException(err.message);
     }
+  }
+
+  @Delete('favorite/:userId/:songId')
+  removeFromFavorite(
+    @Param('userId') userId: string,
+    @Param('songId') songId: string,
+  ) {
+    return this.playlistService.removeFromFavorite(songId, userId);
   }
 
   @Get('search')

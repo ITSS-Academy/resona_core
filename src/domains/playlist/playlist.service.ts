@@ -260,49 +260,102 @@ export class PlaylistService {
     return data;
   }
 
-  async addToFavorite(trackId: string, userId: string) {
-    // 1. Tìm playlist Favorite hệ thống
-    const { data: playlist } = await supabase
+  async addToFavorite( userId: string, trackId: string) {
+    // Ép userId về string để khớp với schema profile.id (text)
+    const profileId = String(userId);
+
+    // 1. Tìm playlist Favorite hệ thống, chỉ lấy id
+    const { data: playlist, error: playlistError } = await supabase
       .from('playlist')
-      .select('*')
-      .eq('profileId', userId)
+      .select('id')
+      .eq('profileId', profileId)
       .eq('isSystem', true)
-      .single();
+      .maybeSingle();
+
+    if (playlistError) {
+      throw new BadRequestException('Cannot get favorite playlist');
+    }
+
+    console.log('ppid', playlist?.id);
 
     let playlistId = playlist?.id;
 
     // 2. Nếu chưa có thì tạo mới
     if (!playlistId) {
-      const { data: newPlaylist, error } = await supabase
+      console.log('!playlistid');
+      const { data: newPlaylist, error: createError } = await supabase
         .from('playlist')
         .insert({
           title: 'Favorite',
-          profileId: userId,
+          profileId: profileId, // luôn cast string
           thumbnailPath: './assets/images/favorite.jpg',
           isSystem: true,
         })
-        .select()
+        .select('id')
         .single();
 
-      if (error)
-        throw new BadRequestException('Cannot create favorite playlist');
+      if (createError) {
+        throw new BadRequestException(
+          createError.message || 'Cannot create favorite playlist',
+        );
+      }
 
       playlistId = newPlaylist.id;
     }
 
-    // 3. Thêm bài hát vào playlist_tracks
-    const { error: insertError } = await supabase
+    // 3. Kiểm tra track đã tồn tại trong playlist chưa
+    const { data: exists, error: existsError } = await supabase
       .from('playlist_tracks')
-      .insert({
-        playlistId,
-        trackId,
-      });
+      .select('trackId')
+      .eq('playlistId', playlistId)
+      .eq('trackId', trackId)
+      .maybeSingle();
 
-    if (insertError) {
-      throw new BadRequestException('Cannot add song to favorite');
+    if (existsError) {
+      throw new BadRequestException('Failed to check favorite song');
+    }
+
+    // 4. Nếu chưa tồn tại thì thêm mới
+    if (!exists) {
+      const { error: insertError } = await supabase
+        .from('playlist_tracks')
+        .insert({
+          playlistId,
+          trackId,
+        });
+
+      if (insertError) {
+        throw new BadRequestException('Cannot add song to favorite');
+      }
     }
 
     return { message: 'Song added to Favorite' };
+  }
+
+
+  async removeFromFavorite(trackId: string, userId: string) {
+    const { data: playlist } = await supabase
+      .from('playlist')
+      .select('id')
+      .eq('profileId', userId)
+      .eq('isSystem', true)
+      .single();
+
+    if (!playlist) {
+      throw new BadRequestException('Favorite playlist not found');
+    }
+
+    const { error } = await supabase
+      .from('playlist_tracks')
+      .delete()
+      .eq('playlistId', playlist.id)
+      .eq('trackId', trackId);
+
+    if (error) {
+      throw new BadRequestException('Cannot remove song from favorite');
+    }
+
+    return { message: 'Song removed from Favorite' };
   }
 
   async getFavouriteTracks(userId: string) {
@@ -354,12 +407,17 @@ export class PlaylistService {
     const { data, error } = await supabase
       .from('playlist')
       .select('*')
-      .ilike('title', `%${query}%`);
+      .ilike('title', `%${query}%`)
+      .eq('isSystem', false)
+      .eq('isPublic', true);
+
     if (error) {
       throw new BadRequestException('Failed to search playlists');
     }
+
     return data;
   }
+
 
   async getTopPlaylists() {
     const { data, error } = await supabase.rpc('get_top_playlists');

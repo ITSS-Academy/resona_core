@@ -206,5 +206,54 @@ export class QueueService {
     return { message: 'Playlist added to queue', trackCount: playlistTracks.length, data };
   }
 
+  async addCategoryToQueue(userId: string, categoryId: string) {
+    // 1️⃣ Lấy vị trí lớn nhất hiện tại trong queue của user
+    const { data: maxData, error: maxError } = await supabase
+      .from('queue')
+      .select('position')
+      .eq('profileId', userId)
+      .order('position', { ascending: false })
+      .limit(1);
+
+    if (maxError) {
+      throw new BadRequestException('Failed to get queue max position');
+    }
+
+    const nextPosition = maxData?.[0]?.position + 1 || 0;
+
+    // 2️⃣ Lấy tất cả track trong playlist
+    const { data: categoryTracks, error: categoryError } = await supabase
+      .from('track')
+      .select('id')
+      .eq('categoryId', categoryId)
+      .order('createdAt', { ascending: true });
+
+    if (categoryError) {
+      throw new BadRequestException('Failed to get category tracks');
+    }
+
+    // 3️⃣ Kiểm tra playlist rỗng
+    if (!categoryTracks || categoryTracks.length === 0) {
+      return { message: 'Playlist is empty', trackCount: 0 };
+    }
+
+    // 4️⃣ Chuẩn bị batch insert
+    const rows = categoryTracks.map((track, i) => ({
+      id: uuid(),
+      profileId: userId,
+      trackId: track.id,
+      position: nextPosition + i,
+    }));
+
+    // 5️⃣ Insert batch và trả về data
+    const { data, error } = await supabase.from('queue').insert(rows).select();
+
+    if (error) {
+      throw new BadRequestException('Failed to add playlist to queue');
+    }
+
+    return { message: 'Playlist added to queue', trackCount: categoryTracks.length, data };
+  }
+
 
 }

@@ -8,15 +8,12 @@ RUN apt-get update && \
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files and install dependencies
 COPY package*.json ./
-# Copy .env file
 COPY .env .env
-
-# Install dependencies
 RUN npm install
 
-# Copy source code
+# Copy the rest of the application code
 COPY . .
 
 # Expose port (default NestJS port)
